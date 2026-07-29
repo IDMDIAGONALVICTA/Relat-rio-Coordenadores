@@ -217,39 +217,44 @@
             font-weight: 700;
         }
 
-        .iframe-container {
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
             width: 100%;
-            height: 600px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            overflow: hidden;
+            border-collapse: collapse;
+            margin-top: 20px;
         }
 
-        .iframe-container iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
+        thead {
+            background: #f8f9fa;
         }
 
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #666;
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 700;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+            color: #555;
+            font-size: 14px;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #fafbfc;
         }
 
         .footer {
@@ -274,15 +279,6 @@
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
-        }
-
-        .info-box {
-            background: #e7f3ff;
-            border-left: 4px solid #667eea;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 4px;
-            color: #333;
         }
 
         @media (max-width: 1200px) {
@@ -315,10 +311,6 @@
 
             .chart-container {
                 height: 250px;
-            }
-
-            .iframe-container {
-                height: 400px;
             }
         }
     </style>
@@ -357,7 +349,7 @@
             </div>
 
             <div class="btn-group">
-                <button class="btn btn-primary" onclick="refreshData()">🔄 Atualizar</button>
+                <button class="btn btn-primary" onclick="refreshDashboard()">🔄 Atualizar</button>
                 <button class="btn btn-secondary" onclick="exportToCSV()">📥 Exportar</button>
             </div>
         </div>
@@ -367,34 +359,26 @@
         </div>
 
         <div class="content" id="contentContainer">
-            <div class="info-box">
-                <strong>ℹ️ Informação:</strong> O dashboard está carregando os dados da planilha Google Sheets. Os gráficos e filtros aparecerão em breve.
-            </div>
-            <div class="loading">
-                <div class="spinner"></div>
-                <p>Carregando dados e gráficos...</p>
-            </div>
+            <!-- Conteúdo será gerado dinamicamente -->
         </div>
 
         <div class="footer">
-            <p>Última atualização: <span id="lastUpdate">--:--</span> | Dados sincronizados com Google Sheets</p>
+            <p>Última atualização: <span id="lastUpdate">--:--</span> | Dashboard com dados sincronizados</p>
         </div>
     </div>
 
     <script>
-        // Usar a URL pubhtml diretamente
-        const PUBHTML_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQoDNbVQ3QLf3dCvIGzJ3hcEuFiC-AWwLacCG85vOABc59XuWSeDa4hqMmaEw-A4zLyFju_kUKVTY4C/pubhtml';
-        
-        const SHEET_NAMES = [
-            'RAILDA - IMOB',
-            'RAILDA - HOUSE',
-            'RENATA - IMOB',
-            'RENATA - HOUSE',
-            'ANDERSON - IMOB',
-            'ANDERSON - HOUSE',
-            'VICTÓRIA - IMOB',
-            'VICTÓRIA - HOUSE'
-        ];
+        // Dados embutidos
+        const SHEET_DATA = {
+            "RAILDA - IMOB": [],
+            "RAILDA - HOUSE": [],
+            "RENATA - IMOB": [],
+            "RENATA - HOUSE": [],
+            "ANDERSON - IMOB": [],
+            "ANDERSON - HOUSE": [],
+            "VICTÓRIA - IMOB": [],
+            "VICTÓRIA - HOUSE": []
+        };
 
         let allData = {};
         let currentTab = 'dashboard';
@@ -402,82 +386,45 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             setupEventListeners();
-            loadDataFromPubhtml();
-            setInterval(loadDataFromPubhtml, 5 * 60 * 1000);
+            initializeDashboard();
         });
 
         function setupEventListeners() {
-            document.getElementById('coordenadorFilter').addEventListener('change', updateDashboard);
-            document.getElementById('monthFilter').addEventListener('change', updateDashboard);
-            document.getElementById('yearFilter').addEventListener('change', updateDashboard);
+            document.getElementById('coordenadorFilter').addEventListener('change', refreshDashboard);
+            document.getElementById('monthFilter').addEventListener('change', refreshDashboard);
+            document.getElementById('yearFilter').addEventListener('change', refreshDashboard);
         }
 
-        async function loadDataFromPubhtml() {
-            try {
-                console.log('Carregando dados da planilha pubhtml...');
-                
-                // Carregar o HTML da planilha
-                const response = await fetch(PUBHTML_URL);
-                const html = await response.text();
-                
-                // Fazer parse do HTML
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                
-                // Encontrar todas as tabelas
-                const tables = doc.querySelectorAll('table');
-                console.log(`Encontradas ${tables.length} tabelas`);
-                
-                // Processar cada tabela
-                let tableIndex = 0;
-                tables.forEach((table, idx) => {
-                    const rows = table.querySelectorAll('tr');
-                    if (rows.length > 1) {
-                        // Extrair headers
-                        const headerCells = rows[0].querySelectorAll('th, td');
-                        const headers = Array.from(headerCells).map(cell => cell.textContent.trim());
-                        
-                        // Extrair dados
-                        const dataRows = [];
-                        for (let i = 1; i < rows.length; i++) {
-                            const cells = rows[i].querySelectorAll('td');
-                            const rowData = {};
-                            Array.from(cells).forEach((cell, cellIdx) => {
-                                if (cellIdx < headers.length) {
-                                    rowData[headers[cellIdx]] = cell.textContent.trim();
-                                }
-                            });
-                            
-                            // Só adicionar se tiver dados
-                            if (Object.values(rowData).some(v => v !== '')) {
-                                dataRows.push(rowData);
-                            }
-                        }
-                        
-                        if (dataRows.length > 0 && tableIndex < SHEET_NAMES.length) {
-                            allData[SHEET_NAMES[tableIndex]] = dataRows;
-                            console.log(`✓ ${SHEET_NAMES[tableIndex]}: ${dataRows.length} registros`);
-                            tableIndex++;
-                        }
+        function initializeDashboard() {
+            // Carregar dados da URL
+            fetch('dados_js.js')
+                .then(response => response.text())
+                .then(text => {
+                    // Extrair dados do arquivo JS
+                    const match = text.match(/const SHEET_DATA = ({[\s\S]*});/);
+                    if (match) {
+                        allData = JSON.parse(match[1]);
+                        populateTabs();
+                        populateFilters();
+                        displayTab('dashboard');
+                        updateLastUpdate();
                     }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar dados:', error);
+                    // Usar dados padrão se o arquivo não existir
+                    allData = SHEET_DATA;
+                    populateTabs();
+                    populateFilters();
+                    displayTab('dashboard');
                 });
-                
-                populateTabs();
-                populateFilters();
-                updateDashboard();
-                updateLastUpdate();
-                
-            } catch (error) {
-                console.error('Erro ao carregar dados:', error);
-                showError('Erro ao carregar dados da planilha. Verifique sua conexão.');
-            }
         }
 
         function populateTabs() {
             const tabsContainer = document.getElementById('tabsContainer');
             tabsContainer.innerHTML = '';
             
-            const tabs = ['dashboard', ...SHEET_NAMES];
+            const tabs = ['dashboard', ...Object.keys(allData)];
             tabs.forEach(tabName => {
                 const button = document.createElement('button');
                 button.className = 'tab-button' + (tabName === currentTab ? ' active' : '');
@@ -492,12 +439,12 @@
             const years = new Set();
             
             Object.values(allData).forEach(data => {
-                data.forEach(row => {
-                    Object.entries(row).forEach(([key, value]) => {
-                        if (key.includes('MÊS') && value) months.add(value.trim());
-                        if (key.includes('ANO') && value) years.add(value.trim());
+                if (Array.isArray(data)) {
+                    data.forEach(row => {
+                        if (row['MÊS']) months.add(row['MÊS'].trim());
+                        if (row['ANO']) years.add(row['ANO'].trim());
                     });
-                });
+                }
             });
             
             const monthSelect = document.getElementById('monthFilter');
@@ -543,20 +490,14 @@
             let filteredData = [];
             
             Object.entries(allData).forEach(([sheetName, data]) => {
+                if (!Array.isArray(data)) return;
                 if (coordenador && !sheetName.includes(coordenador)) return;
                 
                 data.forEach(row => {
                     let matches = true;
                     
-                    if (month) {
-                        const rowMonth = Object.entries(row).find(([k]) => k.includes('MÊS'))?.[1]?.trim();
-                        if (rowMonth !== month) matches = false;
-                    }
-                    
-                    if (year) {
-                        const rowYear = Object.entries(row).find(([k]) => k.includes('ANO'))?.[1]?.trim();
-                        if (rowYear !== year) matches = false;
-                    }
+                    if (month && row['MÊS']?.trim() !== month) matches = false;
+                    if (year && row['ANO']?.trim() !== year) matches = false;
                     
                     if (matches) {
                         filteredData.push({...row, _sheetName: sheetName});
@@ -567,7 +508,7 @@
             return filteredData;
         }
 
-        function updateDashboard() {
+        function refreshDashboard() {
             if (currentTab === 'dashboard') {
                 renderDashboard();
             }
@@ -578,7 +519,7 @@
             const contentContainer = document.getElementById('contentContainer');
             
             if (data.length === 0) {
-                contentContainer.innerHTML = '<div class="loading"><p>Nenhum dado encontrado</p></div>';
+                contentContainer.innerHTML = '<p style="text-align: center; padding: 40px;">Nenhum dado encontrado</p>';
                 return;
             }
             
@@ -593,7 +534,7 @@
                     if (key.includes('QTD VENDA') && !key.includes('CONFIRMADA') && !key.includes('PROCESSO')) {
                         totalVendas += parseInt(value) || 0;
                     }
-                    if (key.includes('VGV') && !key.includes('CONFIRMADA') && !key.includes('PROCESSO')) {
+                    if (key === 'VGV') {
                         const num = parseFloat(String(value).replace(/[^\d,.-]/g, '').replace(',', '.'));
                         totalVGV += num || 0;
                     }
@@ -634,9 +575,9 @@
             const vgvPorMes = {};
             
             data.forEach(row => {
-                const mes = Object.entries(row).find(([k]) => k.includes('MÊS'))?.[1]?.trim() || 'Sem mês';
+                const mes = row['MÊS']?.trim() || 'Sem mês';
                 const empreendimento = row['EMPREENDIMENTO'] || 'Sem empreendimento';
-                const coordenador = row._sheetName.split(' - ')[0];
+                const coordenador = row._sheetName?.split(' - ')[0] || 'Desconhecido';
                 
                 let vendas = 0;
                 let vgv = 0;
@@ -645,7 +586,7 @@
                     if (key.includes('QTD VENDA') && !key.includes('CONFIRMADA') && !key.includes('PROCESSO')) {
                         vendas += parseInt(value) || 0;
                     }
-                    if (key.includes('VGV') && !key.includes('CONFIRMADA') && !key.includes('PROCESSO')) {
+                    if (key === 'VGV') {
                         const num = parseFloat(String(value).replace(/[^\d,.-]/g, '').replace(',', '.'));
                         vgv += num || 0;
                     }
@@ -760,23 +701,23 @@
             const data = allData[tabName] || [];
             const contentContainer = document.getElementById('contentContainer');
             
-            if (data.length === 0) {
-                contentContainer.innerHTML = '<div class="loading"><p>Nenhum dado encontrado</p></div>';
+            if (!Array.isArray(data) || data.length === 0) {
+                contentContainer.innerHTML = '<p style="text-align: center; padding: 40px;">Nenhum dado encontrado</p>';
                 return;
             }
             
             const headers = Object.keys(data[0]);
-            let html = '<div style="overflow-x: auto;"><table style="width:100%; border-collapse: collapse;">';
-            html += '<thead style="background: #f8f9fa;"><tr>';
+            let html = '<div class="table-wrapper"><table>';
+            html += '<thead><tr>';
             headers.forEach(header => {
-                html += `<th style="padding: 15px; text-align: left; font-weight: 700; border-bottom: 2px solid #e0e0e0;">${header}</th>`;
+                html += `<th>${header}</th>`;
             });
             html += '</tr></thead><tbody>';
             
             data.forEach((row, idx) => {
                 html += `<tr style="background: ${idx % 2 === 0 ? '#fafbfc' : 'white'};">`;
                 headers.forEach(header => {
-                    html += `<td style="padding: 12px 15px; border-bottom: 1px solid #e0e0e0;">${row[header] || ''}</td>`;
+                    html += `<td>${row[header] || ''}</td>`;
                 });
                 html += '</tr>';
             });
@@ -792,7 +733,7 @@
                 return;
             }
             
-            const headers = Object.keys(data[0]).filter(k => k !== '_sheetName');
+            const headers = Object.keys(data[0]).filter(k => !k.startsWith('_'));
             let csv = headers.join(',') + '\n';
             data.forEach(row => {
                 const values = headers.map(header => {
@@ -820,15 +761,6 @@
             const now = new Date();
             const timeString = now.toLocaleTimeString('pt-BR');
             document.getElementById('lastUpdate').textContent = timeString;
-        }
-
-        function showError(message) {
-            const contentContainer = document.getElementById('contentContainer');
-            contentContainer.innerHTML = `<div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 6px; margin: 20px 0; border: 1px solid #f5c6cb;">${message}</div>`;
-        }
-
-        function refreshData() {
-            loadDataFromPubhtml();
         }
     </script>
 </body>
