@@ -152,6 +152,7 @@
 
         .content {
             padding: 30px;
+            min-height: 500px;
         }
 
         .tab-content {
@@ -216,44 +217,18 @@
             font-weight: 700;
         }
 
-        .table-wrapper {
-            overflow-x: auto;
-            margin-top: 20px;
-        }
-
-        table {
+        .iframe-container {
             width: 100%;
-            border-collapse: collapse;
+            height: 600px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
         }
 
-        thead {
-            background: #f8f9fa;
-        }
-
-        th {
-            padding: 15px;
-            text-align: left;
-            font-weight: 700;
-            color: #333;
-            border-bottom: 2px solid #e0e0e0;
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #e0e0e0;
-            color: #555;
-            font-size: 14px;
-        }
-
-        tbody tr:hover {
-            background: #f8f9fa;
-        }
-
-        tbody tr:nth-child(even) {
-            background: #fafbfc;
+        .iframe-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
         }
 
         .loading {
@@ -301,6 +276,15 @@
             50% { opacity: 0.5; }
         }
 
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            color: #333;
+        }
+
         @media (max-width: 1200px) {
             .dashboard-grid {
                 grid-template-columns: 1fr;
@@ -332,6 +316,10 @@
             .chart-container {
                 height: 250px;
             }
+
+            .iframe-container {
+                height: 400px;
+            }
         }
     </style>
 </head>
@@ -347,6 +335,10 @@
                 <label for="coordenadorFilter">👤 Coordenador:</label>
                 <select id="coordenadorFilter">
                     <option value="">Todos</option>
+                    <option value="RAILDA">RAILDA</option>
+                    <option value="RENATA">RENATA</option>
+                    <option value="ANDERSON">ANDERSON</option>
+                    <option value="VICTÓRIA">VICTÓRIA</option>
                 </select>
             </div>
 
@@ -375,6 +367,9 @@
         </div>
 
         <div class="content" id="contentContainer">
+            <div class="info-box">
+                <strong>ℹ️ Informação:</strong> O dashboard está carregando os dados da planilha Google Sheets. Os gráficos e filtros aparecerão em breve.
+            </div>
             <div class="loading">
                 <div class="spinner"></div>
                 <p>Carregando dados e gráficos...</p>
@@ -387,7 +382,9 @@
     </div>
 
     <script>
-        const SHEET_ID = '1JiNyYWDJxfO9zk2xTYjWWQvcmvShOFHt6KzX_D8aCKc';
+        // Usar a URL pubhtml diretamente
+        const PUBHTML_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQoDNbVQ3QLf3dCvIGzJ3hcEuFiC-AWwLacCG85vOABc59XuWSeDa4hqMmaEw-A4zLyFju_kUKVTY4C/pubhtml';
+        
         const SHEET_NAMES = [
             'RAILDA - IMOB',
             'RAILDA - HOUSE',
@@ -405,8 +402,8 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             setupEventListeners();
-            refreshData();
-            setInterval(refreshData, 5 * 60 * 1000);
+            loadDataFromPubhtml();
+            setInterval(loadDataFromPubhtml, 5 * 60 * 1000);
         });
 
         function setupEventListeners() {
@@ -415,96 +412,65 @@
             document.getElementById('yearFilter').addEventListener('change', updateDashboard);
         }
 
-        async function refreshData() {
+        async function loadDataFromPubhtml() {
             try {
-                console.log('Carregando dados...');
-                allData = {};
+                console.log('Carregando dados da planilha pubhtml...');
                 
-                for (const sheetName of SHEET_NAMES) {
-                    await loadSheetData(sheetName);
-                }
-
+                // Carregar o HTML da planilha
+                const response = await fetch(PUBHTML_URL);
+                const html = await response.text();
+                
+                // Fazer parse do HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Encontrar todas as tabelas
+                const tables = doc.querySelectorAll('table');
+                console.log(`Encontradas ${tables.length} tabelas`);
+                
+                // Processar cada tabela
+                let tableIndex = 0;
+                tables.forEach((table, idx) => {
+                    const rows = table.querySelectorAll('tr');
+                    if (rows.length > 1) {
+                        // Extrair headers
+                        const headerCells = rows[0].querySelectorAll('th, td');
+                        const headers = Array.from(headerCells).map(cell => cell.textContent.trim());
+                        
+                        // Extrair dados
+                        const dataRows = [];
+                        for (let i = 1; i < rows.length; i++) {
+                            const cells = rows[i].querySelectorAll('td');
+                            const rowData = {};
+                            Array.from(cells).forEach((cell, cellIdx) => {
+                                if (cellIdx < headers.length) {
+                                    rowData[headers[cellIdx]] = cell.textContent.trim();
+                                }
+                            });
+                            
+                            // Só adicionar se tiver dados
+                            if (Object.values(rowData).some(v => v !== '')) {
+                                dataRows.push(rowData);
+                            }
+                        }
+                        
+                        if (dataRows.length > 0 && tableIndex < SHEET_NAMES.length) {
+                            allData[SHEET_NAMES[tableIndex]] = dataRows;
+                            console.log(`✓ ${SHEET_NAMES[tableIndex]}: ${dataRows.length} registros`);
+                            tableIndex++;
+                        }
+                    }
+                });
+                
                 populateTabs();
                 populateFilters();
                 updateDashboard();
                 updateLastUpdate();
                 
             } catch (error) {
-                console.error('Erro:', error);
+                console.error('Erro ao carregar dados:', error);
+                showError('Erro ao carregar dados da planilha. Verifique sua conexão.');
             }
-        }
-
-        async function loadSheetData(sheetName) {
-            try {
-                const encodedSheet = encodeURIComponent(sheetName);
-                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodedSheet}`;
-                
-                const response = await fetch(url);
-                const csvText = await response.text();
-                const rows = parseCSV(csvText);
-                
-                if (rows.length > 0) {
-                    const headers = rows[0];
-                    const dataRows = rows.slice(1);
-                    
-                    allData[sheetName] = dataRows.map(row => {
-                        const obj = {};
-                        headers.forEach((header, index) => {
-                            obj[header] = row[index] || '';
-                        });
-                        return obj;
-                    }).filter(row => Object.values(row).some(val => val !== ''));
-                }
-            } catch (error) {
-                console.error(`Erro ao carregar ${sheetName}:`, error);
-            }
-        }
-
-        function parseCSV(csvText) {
-            const rows = [];
-            let currentRow = [];
-            let currentCell = '';
-            let insideQuotes = false;
-
-            for (let i = 0; i < csvText.length; i++) {
-                const char = csvText[i];
-                const nextChar = csvText[i + 1];
-
-                if (char === '"') {
-                    if (insideQuotes && nextChar === '"') {
-                        currentCell += '"';
-                        i++;
-                    } else {
-                        insideQuotes = !insideQuotes;
-                    }
-                } else if (char === ',' && !insideQuotes) {
-                    currentRow.push(currentCell.trim());
-                    currentCell = '';
-                } else if ((char === '\n' || char === '\r') && !insideQuotes) {
-                    if (currentCell || currentRow.length > 0) {
-                        currentRow.push(currentCell.trim());
-                        if (currentRow.some(cell => cell !== '')) {
-                            rows.push(currentRow);
-                        }
-                        currentRow = [];
-                        currentCell = '';
-                    }
-                    if (char === '\r' && nextChar === '\n') {
-                        i++;
-                    }
-                } else {
-                    currentCell += char;
-                }
-            }
-
-            if (currentCell || currentRow.length > 0) {
-                currentRow.push(currentCell.trim());
-                if (currentRow.some(cell => cell !== '')) {
-                    rows.push(currentRow);
-                }
-            }
-
-            return rows;
         }
 
         function populateTabs() {
@@ -522,29 +488,16 @@
         }
 
         function populateFilters() {
-            const coordenadores = new Set();
             const months = new Set();
             const years = new Set();
             
-            Object.entries(allData).forEach(([sheetName, data]) => {
-                const coordenador = sheetName.split(' - ')[0];
-                coordenadores.add(coordenador);
-                
+            Object.values(allData).forEach(data => {
                 data.forEach(row => {
                     Object.entries(row).forEach(([key, value]) => {
                         if (key.includes('MÊS') && value) months.add(value.trim());
                         if (key.includes('ANO') && value) years.add(value.trim());
                     });
                 });
-            });
-            
-            const coordSelect = document.getElementById('coordenadorFilter');
-            coordSelect.innerHTML = '<option value="">Todos</option>';
-            Array.from(coordenadores).sort().forEach(coord => {
-                const option = document.createElement('option');
-                option.value = coord;
-                option.textContent = coord;
-                coordSelect.appendChild(option);
             });
             
             const monthSelect = document.getElementById('monthFilter');
@@ -675,7 +628,6 @@
         }
 
         function createCharts(data) {
-            // Preparar dados
             const vendidosPorMes = {};
             const vendidosPorEmpreendimento = {};
             const vendidosPorCoordenador = {};
@@ -726,12 +678,8 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: true }
-                        },
-                        scales: {
-                            y: { beginAtZero: true }
-                        }
+                        plugins: { legend: { display: true } },
+                        scales: { y: { beginAtZero: true } }
                     }
                 });
             }
@@ -752,9 +700,7 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom' }
-                        }
+                        plugins: { legend: { position: 'bottom' } }
                     }
                 });
             }
@@ -776,12 +722,8 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false }
-                        },
-                        scales: {
-                            y: { beginAtZero: true }
-                        }
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true } }
                     }
                 });
             }
@@ -807,12 +749,8 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: true }
-                        },
-                        scales: {
-                            y: { beginAtZero: true }
-                        }
+                        plugins: { legend: { display: true } },
+                        scales: { y: { beginAtZero: true } }
                     }
                 });
             }
@@ -828,17 +766,17 @@
             }
             
             const headers = Object.keys(data[0]);
-            let html = '<div class="table-wrapper"><table>';
-            html += '<thead><tr>';
+            let html = '<div style="overflow-x: auto;"><table style="width:100%; border-collapse: collapse;">';
+            html += '<thead style="background: #f8f9fa;"><tr>';
             headers.forEach(header => {
-                html += `<th>${header}</th>`;
+                html += `<th style="padding: 15px; text-align: left; font-weight: 700; border-bottom: 2px solid #e0e0e0;">${header}</th>`;
             });
             html += '</tr></thead><tbody>';
             
-            data.forEach(row => {
-                html += '<tr>';
+            data.forEach((row, idx) => {
+                html += `<tr style="background: ${idx % 2 === 0 ? '#fafbfc' : 'white'};">`;
                 headers.forEach(header => {
-                    html += `<td>${row[header] || ''}</td>`;
+                    html += `<td style="padding: 12px 15px; border-bottom: 1px solid #e0e0e0;">${row[header] || ''}</td>`;
                 });
                 html += '</tr>';
             });
@@ -882,6 +820,15 @@
             const now = new Date();
             const timeString = now.toLocaleTimeString('pt-BR');
             document.getElementById('lastUpdate').textContent = timeString;
+        }
+
+        function showError(message) {
+            const contentContainer = document.getElementById('contentContainer');
+            contentContainer.innerHTML = `<div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 6px; margin: 20px 0; border: 1px solid #f5c6cb;">${message}</div>`;
+        }
+
+        function refreshData() {
+            loadDataFromPubhtml();
         }
     </script>
 </body>
