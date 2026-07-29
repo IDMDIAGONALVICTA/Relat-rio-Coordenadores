@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Informações Coordenadores</title>
+    <title>Dashboard Interativo - Informações Coordenadores</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <style>
         * {
             margin: 0;
@@ -19,7 +20,7 @@
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
             background: white;
             border-radius: 12px;
@@ -161,14 +162,68 @@
             display: block;
         }
 
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e0e0e0;
+        }
+
+        .chart-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-card h4 {
+            font-size: 12px;
+            text-transform: uppercase;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
         .table-wrapper {
             overflow-x: auto;
+            margin-top: 20px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
         }
 
         thead {
@@ -201,29 +256,6 @@
             background: #fafbfc;
         }
 
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .badge-success {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .badge-warning {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .badge-danger {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
         .loading {
             text-align: center;
             padding: 40px;
@@ -245,64 +277,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 6px;
-            margin: 20px 0;
-            border: 1px solid #f5c6cb;
-        }
-
-        .success {
-            background: #d4edda;
-            color: #155724;
-            padding: 15px;
-            border-radius: 6px;
-            margin: 20px 0;
-            border: 1px solid #c3e6cb;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .stat-card h3 {
-            font-size: 12px;
-            text-transform: uppercase;
-            opacity: 0.9;
-            margin-bottom: 10px;
-        }
-
-        .stat-card .value {
-            font-size: 28px;
-            font-weight: 700;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #999;
-        }
-
-        .empty-state svg {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 20px;
-            opacity: 0.5;
-        }
-
         .footer {
             padding: 20px 30px;
             background: #f8f9fa;
@@ -310,6 +284,27 @@
             text-align: center;
             color: #999;
             font-size: 12px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #28a745;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         @media (max-width: 768px) {
@@ -326,22 +321,16 @@
                 flex: 1;
             }
 
-            .tabs {
-                overflow-x: auto;
-            }
-
-            .tab-button {
-                padding: 12px 15px;
-                font-size: 12px;
-            }
-
-            th, td {
-                padding: 10px;
-                font-size: 12px;
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
 
             .header h1 {
                 font-size: 20px;
+            }
+
+            .chart-container {
+                height: 250px;
             }
         }
     </style>
@@ -349,14 +338,16 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📊 Dashboard - Informações Coordenadores</h1>
-            <p>Sincronização em tempo real com Google Sheets</p>
+            <h1>📊 Dashboard Interativo - Coordenadores</h1>
+            <p><span class="status-indicator"></span>Gráficos e análises em tempo real</p>
         </div>
 
         <div class="controls">
             <div class="control-group">
-                <label for="searchInput">🔍 Buscar:</label>
-                <input type="text" id="searchInput" placeholder="Digite para filtrar...">
+                <label for="coordenadorFilter">👤 Coordenador:</label>
+                <select id="coordenadorFilter">
+                    <option value="">Todos</option>
+                </select>
             </div>
 
             <div class="control-group">
@@ -374,8 +365,8 @@
             </div>
 
             <div class="btn-group">
-                <button class="btn btn-primary" onclick="refreshData()">🔄 Atualizar Dados</button>
-                <button class="btn btn-secondary" onclick="exportToCSV()">📥 Exportar CSV</button>
+                <button class="btn btn-primary" onclick="refreshData()">🔄 Atualizar</button>
+                <button class="btn btn-secondary" onclick="exportToCSV()">📥 Exportar</button>
             </div>
         </div>
 
@@ -386,7 +377,7 @@
         <div class="content" id="contentContainer">
             <div class="loading">
                 <div class="spinner"></div>
-                <p>Carregando dados da planilha...</p>
+                <p>Carregando dados e gráficos...</p>
             </div>
         </div>
 
@@ -396,9 +387,7 @@
     </div>
 
     <script>
-        // Configuração
         const SHEET_ID = '1JiNyYWDJxfO9zk2xTYjWWQvcmvShOFHt6KzX_D8aCKc';
-        const API_KEY = 'AIzaSyAhWN4sJXmBkXLVhCWGqfCkqQzJZGCvVDQ'; // Chave pública para leitura
         const SHEET_NAMES = [
             'RAILDA - IMOB',
             'RAILDA - HOUSE',
@@ -411,26 +400,24 @@
         ];
 
         let allData = {};
-        let filteredData = {};
-        let currentTab = SHEET_NAMES[0];
+        let currentTab = 'dashboard';
+        let charts = {};
 
-        // Inicializar
         document.addEventListener('DOMContentLoaded', function() {
             setupEventListeners();
             refreshData();
-            // Atualizar a cada 5 minutos
             setInterval(refreshData, 5 * 60 * 1000);
         });
 
         function setupEventListeners() {
-            document.getElementById('searchInput').addEventListener('input', filterTable);
-            document.getElementById('monthFilter').addEventListener('change', filterTable);
-            document.getElementById('yearFilter').addEventListener('change', filterTable);
+            document.getElementById('coordenadorFilter').addEventListener('change', updateDashboard);
+            document.getElementById('monthFilter').addEventListener('change', updateDashboard);
+            document.getElementById('yearFilter').addEventListener('change', updateDashboard);
         }
 
         async function refreshData() {
             try {
-                console.log('Iniciando carregamento de dados...');
+                console.log('Carregando dados...');
                 allData = {};
                 
                 for (const sheetName of SHEET_NAMES) {
@@ -439,74 +426,128 @@
 
                 populateTabs();
                 populateFilters();
-                displayTab(currentTab);
+                updateDashboard();
                 updateLastUpdate();
                 
             } catch (error) {
-                console.error('Erro ao carregar dados:', error);
-                showError('Erro ao carregar dados. Verifique sua conexão e tente novamente.');
+                console.error('Erro:', error);
             }
         }
 
         async function loadSheetData(sheetName) {
             try {
-                const range = `'${sheetName}'!A1:Z1000`;
-                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?key=${API_KEY}`;
+                const encodedSheet = encodeURIComponent(sheetName);
+                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodedSheet}`;
                 
                 const response = await fetch(url);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const csvText = await response.text();
+                const rows = parseCSV(csvText);
                 
-                const data = await response.json();
-                
-                if (data.values && data.values.length > 0) {
-                    const headers = data.values[0];
-                    const rows = data.values.slice(1);
+                if (rows.length > 0) {
+                    const headers = rows[0];
+                    const dataRows = rows.slice(1);
                     
-                    allData[sheetName] = rows.map(row => {
+                    allData[sheetName] = dataRows.map(row => {
                         const obj = {};
                         headers.forEach((header, index) => {
                             obj[header] = row[index] || '';
                         });
                         return obj;
                     }).filter(row => Object.values(row).some(val => val !== ''));
-                    
-                    console.log(`Carregados ${allData[sheetName].length} registros de ${sheetName}`);
                 }
             } catch (error) {
                 console.error(`Erro ao carregar ${sheetName}:`, error);
             }
         }
 
+        function parseCSV(csvText) {
+            const rows = [];
+            let currentRow = [];
+            let currentCell = '';
+            let insideQuotes = false;
+
+            for (let i = 0; i < csvText.length; i++) {
+                const char = csvText[i];
+                const nextChar = csvText[i + 1];
+
+                if (char === '"') {
+                    if (insideQuotes && nextChar === '"') {
+                        currentCell += '"';
+                        i++;
+                    } else {
+                        insideQuotes = !insideQuotes;
+                    }
+                } else if (char === ',' && !insideQuotes) {
+                    currentRow.push(currentCell.trim());
+                    currentCell = '';
+                } else if ((char === '\n' || char === '\r') && !insideQuotes) {
+                    if (currentCell || currentRow.length > 0) {
+                        currentRow.push(currentCell.trim());
+                        if (currentRow.some(cell => cell !== '')) {
+                            rows.push(currentRow);
+                        }
+                        currentRow = [];
+                        currentCell = '';
+                    }
+                    if (char === '\r' && nextChar === '\n') {
+                        i++;
+                    }
+                } else {
+                    currentCell += char;
+                }
+            }
+
+            if (currentCell || currentRow.length > 0) {
+                currentRow.push(currentCell.trim());
+                if (currentRow.some(cell => cell !== '')) {
+                    rows.push(currentRow);
+                }
+            }
+
+            return rows;
+        }
+
         function populateTabs() {
             const tabsContainer = document.getElementById('tabsContainer');
             tabsContainer.innerHTML = '';
             
-            SHEET_NAMES.forEach(sheetName => {
+            const tabs = ['dashboard', ...SHEET_NAMES];
+            tabs.forEach(tabName => {
                 const button = document.createElement('button');
-                button.className = 'tab-button' + (sheetName === currentTab ? ' active' : '');
-                button.textContent = sheetName;
-                button.onclick = () => displayTab(sheetName);
+                button.className = 'tab-button' + (tabName === currentTab ? ' active' : '');
+                button.textContent = tabName === 'dashboard' ? '📊 Dashboard' : tabName;
+                button.onclick = () => displayTab(tabName);
                 tabsContainer.appendChild(button);
             });
         }
 
         function populateFilters() {
+            const coordenadores = new Set();
             const months = new Set();
             const years = new Set();
             
-            Object.values(allData).forEach(sheetData => {
-                sheetData.forEach(row => {
-                    if (row['MÊS']) months.add(row['MÊS']);
-                    if (row['ANO']) years.add(row['ANO']);
+            Object.entries(allData).forEach(([sheetName, data]) => {
+                const coordenador = sheetName.split(' - ')[0];
+                coordenadores.add(coordenador);
+                
+                data.forEach(row => {
+                    Object.entries(row).forEach(([key, value]) => {
+                        if (key.includes('MÊS') && value) months.add(value.trim());
+                        if (key.includes('ANO') && value) years.add(value.trim());
+                    });
                 });
             });
             
+            const coordSelect = document.getElementById('coordenadorFilter');
+            coordSelect.innerHTML = '<option value="">Todos</option>';
+            Array.from(coordenadores).sort().forEach(coord => {
+                const option = document.createElement('option');
+                option.value = coord;
+                option.textContent = coord;
+                coordSelect.appendChild(option);
+            });
+            
             const monthSelect = document.getElementById('monthFilter');
-            const yearSelect = document.getElementById('yearFilter');
-            
-            const currentMonth = monthSelect.value;
-            const currentYear = yearSelect.value;
-            
             monthSelect.innerHTML = '<option value="">Todos</option>';
             Array.from(months).sort().forEach(month => {
                 const option = document.createElement('option');
@@ -514,8 +555,8 @@
                 option.textContent = month;
                 monthSelect.appendChild(option);
             });
-            monthSelect.value = currentMonth;
             
+            const yearSelect = document.getElementById('yearFilter');
             yearSelect.innerHTML = '<option value="">Todos</option>';
             Array.from(years).sort().reverse().forEach(year => {
                 const option = document.createElement('option');
@@ -523,59 +564,270 @@
                 option.textContent = year;
                 yearSelect.appendChild(option);
             });
-            yearSelect.value = currentYear;
         }
 
-        function displayTab(sheetName) {
-            currentTab = sheetName;
-            
-            // Atualizar botões de aba
+        function displayTab(tabName) {
+            currentTab = tabName;
             document.querySelectorAll('.tab-button').forEach(btn => {
                 btn.classList.remove('active');
-                if (btn.textContent === sheetName) {
+                if (btn.textContent.includes(tabName === 'dashboard' ? 'Dashboard' : tabName)) {
                     btn.classList.add('active');
                 }
             });
             
-            filterTable();
+            if (tabName === 'dashboard') {
+                renderDashboard();
+            } else {
+                renderTableTab(tabName);
+            }
         }
 
-        function filterTable() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const monthFilter = document.getElementById('monthFilter').value;
-            const yearFilter = document.getElementById('yearFilter').value;
+        function getFilteredData() {
+            const coordenador = document.getElementById('coordenadorFilter').value;
+            const month = document.getElementById('monthFilter').value;
+            const year = document.getElementById('yearFilter').value;
             
-            let data = allData[currentTab] || [];
+            let filteredData = [];
             
-            data = data.filter(row => {
-                const matchesSearch = Object.values(row).some(val => 
-                    String(val).toLowerCase().includes(searchTerm)
-                );
+            Object.entries(allData).forEach(([sheetName, data]) => {
+                if (coordenador && !sheetName.includes(coordenador)) return;
                 
-                const matchesMonth = !monthFilter || row['MÊS'] === monthFilter;
-                const matchesYear = !yearFilter || row['ANO'] === yearFilter;
-                
-                return matchesSearch && matchesMonth && matchesYear;
+                data.forEach(row => {
+                    let matches = true;
+                    
+                    if (month) {
+                        const rowMonth = Object.entries(row).find(([k]) => k.includes('MÊS'))?.[1]?.trim();
+                        if (rowMonth !== month) matches = false;
+                    }
+                    
+                    if (year) {
+                        const rowYear = Object.entries(row).find(([k]) => k.includes('ANO'))?.[1]?.trim();
+                        if (rowYear !== year) matches = false;
+                    }
+                    
+                    if (matches) {
+                        filteredData.push({...row, _sheetName: sheetName});
+                    }
+                });
             });
             
-            filteredData[currentTab] = data;
-            renderTable(data);
+            return filteredData;
         }
 
-        function renderTable(data) {
+        function updateDashboard() {
+            if (currentTab === 'dashboard') {
+                renderDashboard();
+            }
+        }
+
+        function renderDashboard() {
+            const data = getFilteredData();
             const contentContainer = document.getElementById('contentContainer');
             
-            if (!data || data.length === 0) {
-                contentContainer.innerHTML = `
-                    <div class="empty-state">
-                        <p>Nenhum dado encontrado</p>
-                    </div>
-                `;
+            if (data.length === 0) {
+                contentContainer.innerHTML = '<div class="loading"><p>Nenhum dado encontrado</p></div>';
+                return;
+            }
+            
+            // Calcular estatísticas
+            let totalVendas = 0;
+            let totalVGV = 0;
+            let totalConfirmadas = 0;
+            let totalEmProcesso = 0;
+            
+            data.forEach(row => {
+                Object.entries(row).forEach(([key, value]) => {
+                    if (key.includes('QTD VENDA') && !key.includes('CONFIRMADA') && !key.includes('PROCESSO')) {
+                        totalVendas += parseInt(value) || 0;
+                    }
+                    if (key.includes('VGV') && !key.includes('CONFIRMADA') && !key.includes('PROCESSO')) {
+                        const num = parseFloat(String(value).replace(/[^\d,.-]/g, '').replace(',', '.'));
+                        totalVGV += num || 0;
+                    }
+                    if (key.includes('CONFIRMADA')) {
+                        totalConfirmadas += parseInt(value) || 0;
+                    }
+                    if (key.includes('PROCESSO')) {
+                        totalEmProcesso += parseInt(value) || 0;
+                    }
+                });
+            });
+            
+            let html = '<div class="stats-grid">';
+            html += `<div class="stat-card"><h4>Total de Vendas</h4><div class="value">${totalVendas}</div></div>`;
+            html += `<div class="stat-card"><h4>VGV Total</h4><div class="value">R$ ${(totalVGV / 1000000).toFixed(1)}M</div></div>`;
+            html += `<div class="stat-card"><h4>Confirmadas</h4><div class="value">${totalConfirmadas}</div></div>`;
+            html += `<div class="stat-card"><h4>Em Processo</h4><div class="value">${totalEmProcesso}</div></div>`;
+            html += '</div>';
+            
+            html += '<div class="dashboard-grid">';
+            html += '<div class="chart-card"><h3>📈 Vendas por Mês</h3><div class="chart-container"><canvas id="chartVendasMes"></canvas></div></div>';
+            html += '<div class="chart-card"><h3>🏢 Vendas por Empreendimento</h3><div class="chart-container"><canvas id="chartEmpreendimento"></canvas></div></div>';
+            html += '<div class="chart-card"><h3>👥 Comparação entre Coordenadores</h3><div class="chart-container"><canvas id="chartCoordenadores"></canvas></div></div>';
+            html += '<div class="chart-card"><h3>💰 Evolução de VGV</h3><div class="chart-container"><canvas id="chartVGV"></canvas></div></div>';
+            html += '</div>';
+            
+            contentContainer.innerHTML = html;
+            
+            setTimeout(() => {
+                createCharts(data);
+            }, 100);
+        }
+
+        function createCharts(data) {
+            // Preparar dados
+            const vendidosPorMes = {};
+            const vendidosPorEmpreendimento = {};
+            const vendidosPorCoordenador = {};
+            const vgvPorMes = {};
+            
+            data.forEach(row => {
+                const mes = Object.entries(row).find(([k]) => k.includes('MÊS'))?.[1]?.trim() || 'Sem mês';
+                const empreendimento = row['EMPREENDIMENTO'] || 'Sem empreendimento';
+                const coordenador = row._sheetName.split(' - ')[0];
+                
+                let vendas = 0;
+                let vgv = 0;
+                
+                Object.entries(row).forEach(([key, value]) => {
+                    if (key.includes('QTD VENDA') && !key.includes('CONFIRMADA') && !key.includes('PROCESSO')) {
+                        vendas += parseInt(value) || 0;
+                    }
+                    if (key.includes('VGV') && !key.includes('CONFIRMADA') && !key.includes('PROCESSO')) {
+                        const num = parseFloat(String(value).replace(/[^\d,.-]/g, '').replace(',', '.'));
+                        vgv += num || 0;
+                    }
+                });
+                
+                vendidosPorMes[mes] = (vendidosPorMes[mes] || 0) + vendas;
+                vendidosPorEmpreendimento[empreendimento] = (vendidosPorEmpreendimento[empreendimento] || 0) + vendas;
+                vendidosPorCoordenador[coordenador] = (vendidosPorCoordenador[coordenador] || 0) + vendas;
+                vgvPorMes[mes] = (vgvPorMes[mes] || 0) + vgv;
+            });
+            
+            const colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b', '#fa709a', '#fee140', '#30b0fe'];
+            
+            // Gráfico de Vendas por Mês
+            const ctxMes = document.getElementById('chartVendasMes');
+            if (ctxMes) {
+                if (charts.vendasMes) charts.vendasMes.destroy();
+                charts.vendasMes = new Chart(ctxMes, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(vendidosPorMes),
+                        datasets: [{
+                            label: 'Vendas',
+                            data: Object.values(vendidosPorMes),
+                            backgroundColor: colors[0],
+                            borderColor: colors[0],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: true }
+                        },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            }
+            
+            // Gráfico de Vendas por Empreendimento
+            const ctxEmpreendimento = document.getElementById('chartEmpreendimento');
+            if (ctxEmpreendimento) {
+                if (charts.empreendimento) charts.empreendimento.destroy();
+                charts.empreendimento = new Chart(ctxEmpreendimento, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(vendidosPorEmpreendimento),
+                        datasets: [{
+                            data: Object.values(vendidosPorEmpreendimento),
+                            backgroundColor: colors
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                });
+            }
+            
+            // Gráfico de Comparação entre Coordenadores
+            const ctxCoordenadores = document.getElementById('chartCoordenadores');
+            if (ctxCoordenadores) {
+                if (charts.coordenadores) charts.coordenadores.destroy();
+                charts.coordenadores = new Chart(ctxCoordenadores, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(vendidosPorCoordenador),
+                        datasets: [{
+                            label: 'Vendas por Coordenador',
+                            data: Object.values(vendidosPorCoordenador),
+                            backgroundColor: colors.slice(0, Object.keys(vendidosPorCoordenador).length)
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            }
+            
+            // Gráfico de Evolução de VGV
+            const ctxVGV = document.getElementById('chartVGV');
+            if (ctxVGV) {
+                if (charts.vgv) charts.vgv.destroy();
+                charts.vgv = new Chart(ctxVGV, {
+                    type: 'line',
+                    data: {
+                        labels: Object.keys(vgvPorMes),
+                        datasets: [{
+                            label: 'VGV (R$ Milhões)',
+                            data: Object.values(vgvPorMes).map(v => v / 1000000),
+                            borderColor: colors[1],
+                            backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: true }
+                        },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            }
+        }
+
+        function renderTableTab(tabName) {
+            const data = allData[tabName] || [];
+            const contentContainer = document.getElementById('contentContainer');
+            
+            if (data.length === 0) {
+                contentContainer.innerHTML = '<div class="loading"><p>Nenhum dado encontrado</p></div>';
                 return;
             }
             
             const headers = Object.keys(data[0]);
-            
             let html = '<div class="table-wrapper"><table>';
             html += '<thead><tr>';
             headers.forEach(header => {
@@ -586,16 +838,7 @@
             data.forEach(row => {
                 html += '<tr>';
                 headers.forEach(header => {
-                    let value = row[header] || '';
-                    
-                    // Formatação especial para valores monetários
-                    if (header.includes('VGV') || header.includes('PREÇO')) {
-                        if (value && !isNaN(value)) {
-                            value = `R$ ${parseFloat(value).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-                        }
-                    }
-                    
-                    html += `<td>${value}</td>`;
+                    html += `<td>${row[header] || ''}</td>`;
                 });
                 html += '</tr>';
             });
@@ -604,42 +847,18 @@
             contentContainer.innerHTML = html;
         }
 
-        function filterTable() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const monthFilter = document.getElementById('monthFilter').value;
-            const yearFilter = document.getElementById('yearFilter').value;
-            
-            let data = allData[currentTab] || [];
-            
-            data = data.filter(row => {
-                const matchesSearch = Object.values(row).some(val => 
-                    String(val).toLowerCase().includes(searchTerm)
-                );
-                
-                const matchesMonth = !monthFilter || row['MÊS'] === monthFilter;
-                const matchesYear = !yearFilter || row['ANO'] === yearFilter;
-                
-                return matchesSearch && matchesMonth && matchesYear;
-            });
-            
-            filteredData[currentTab] = data;
-            renderTable(data);
-        }
-
         function exportToCSV() {
-            if (!filteredData[currentTab] || filteredData[currentTab].length === 0) {
+            const data = getFilteredData();
+            if (data.length === 0) {
                 alert('Nenhum dado para exportar');
                 return;
             }
             
-            const data = filteredData[currentTab];
-            const headers = Object.keys(data[0]);
-            
+            const headers = Object.keys(data[0]).filter(k => k !== '_sheetName');
             let csv = headers.join(',') + '\n';
             data.forEach(row => {
                 const values = headers.map(header => {
                     let value = row[header] || '';
-                    // Escapar aspas e envolver em aspas se necessário
                     if (String(value).includes(',') || String(value).includes('"')) {
                         value = '"' + String(value).replace(/"/g, '""') + '"';
                     }
@@ -652,7 +871,7 @@
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
             link.setAttribute('href', url);
-            link.setAttribute('download', `${currentTab}_${new Date().toISOString().split('T')[0]}.csv`);
+            link.setAttribute('download', `dashboard_${new Date().toISOString().split('T')[0]}.csv`);
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
@@ -663,11 +882,6 @@
             const now = new Date();
             const timeString = now.toLocaleTimeString('pt-BR');
             document.getElementById('lastUpdate').textContent = timeString;
-        }
-
-        function showError(message) {
-            const contentContainer = document.getElementById('contentContainer');
-            contentContainer.innerHTML = `<div class="error">${message}</div>`;
         }
     </script>
 </body>
