@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Informações Coordenadores</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .controls {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .control-group input,
+        .control-group select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            color: #333;
+        }
+
+        .control-group input:focus,
+        .control-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e0e0e0;
+            background: white;
+            overflow-x: auto;
+        }
+
+        .tab-button {
+            padding: 15px 20px;
+            border: none;
+            background: white;
+            color: #666;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .tab-button:hover {
+            background: #f8f9fa;
+            color: #667eea;
+        }
+
+        .tab-button.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        thead {
+            background: #f8f9fa;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 700;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+            color: #555;
+            font-size: 14px;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #fafbfc;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border: 1px solid #f5c6cb;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border: 1px solid #c3e6cb;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            font-size: 12px;
+            text-transform: uppercase;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .footer {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+
+            .btn-group {
+                margin-left: 0;
+                width: 100%;
+            }
+
+            .btn {
+                flex: 1;
+            }
+
+            .tabs {
+                overflow-x: auto;
+            }
+
+            .tab-button {
+                padding: 12px 15px;
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 10px;
+                font-size: 12px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Dashboard - Informações Coordenadores</h1>
+            <p>Sincronização em tempo real com Google Sheets</p>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="searchInput">🔍 Buscar:</label>
+                <input type="text" id="searchInput" placeholder="Digite para filtrar...">
+            </div>
+
+            <div class="control-group">
+                <label for="monthFilter">📅 Mês:</label>
+                <select id="monthFilter">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="yearFilter">📆 Ano:</label>
+                <select id="yearFilter">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="refreshData()">🔄 Atualizar Dados</button>
+                <button class="btn btn-secondary" onclick="exportToCSV()">📥 Exportar CSV</button>
+            </div>
+        </div>
+
+        <div class="tabs" id="tabsContainer">
+            <!-- Tabs serão geradas dinamicamente -->
+        </div>
+
+        <div class="content" id="contentContainer">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Carregando dados da planilha...</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Última atualização: <span id="lastUpdate">--:--</span> | Dados sincronizados com Google Sheets</p>
+        </div>
+    </div>
+
+    <script>
+        // Configuração
+        const SHEET_ID = '1JiNyYWDJxfO9zk2xTYjWWQvcmvShOFHt6KzX_D8aCKc';
+        const API_KEY = 'AIzaSyAhWN4sJXmBkXLVhCWGqfCkqQzJZGCvVDQ'; // Chave pública para leitura
+        const SHEET_NAMES = [
+            'RAILDA - IMOB',
+            'RAILDA - HOUSE',
+            'RENATA - IMOB',
+            'RENATA - HOUSE',
+            'ANDERSON - IMOB',
+            'ANDERSON - HOUSE',
+            'VICTÓRIA - IMOB',
+            'VICTÓRIA - HOUSE'
+        ];
+
+        let allData = {};
+        let filteredData = {};
+        let currentTab = SHEET_NAMES[0];
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            refreshData();
+            // Atualizar a cada 5 minutos
+            setInterval(refreshData, 5 * 60 * 1000);
+        });
+
+        function setupEventListeners() {
+            document.getElementById('searchInput').addEventListener('input', filterTable);
+            document.getElementById('monthFilter').addEventListener('change', filterTable);
+            document.getElementById('yearFilter').addEventListener('change', filterTable);
+        }
+
+        async function refreshData() {
+            try {
+                console.log('Iniciando carregamento de dados...');
+                allData = {};
+                
+                for (const sheetName of SHEET_NAMES) {
+                    await loadSheetData(sheetName);
+                }
+
+                populateTabs();
+                populateFilters();
+                displayTab(currentTab);
+                updateLastUpdate();
+                
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+                showError('Erro ao carregar dados. Verifique sua conexão e tente novamente.');
+            }
+        }
+
+        async function loadSheetData(sheetName) {
+            try {
+                const range = `'${sheetName}'!A1:Z1000`;
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?key=${API_KEY}`;
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                
+                const data = await response.json();
+                
+                if (data.values && data.values.length > 0) {
+                    const headers = data.values[0];
+                    const rows = data.values.slice(1);
+                    
+                    allData[sheetName] = rows.map(row => {
+                        const obj = {};
+                        headers.forEach((header, index) => {
+                            obj[header] = row[index] || '';
+                        });
+                        return obj;
+                    }).filter(row => Object.values(row).some(val => val !== ''));
+                    
+                    console.log(`Carregados ${allData[sheetName].length} registros de ${sheetName}`);
+                }
+            } catch (error) {
+                console.error(`Erro ao carregar ${sheetName}:`, error);
+            }
+        }
+
+        function populateTabs() {
+            const tabsContainer = document.getElementById('tabsContainer');
+            tabsContainer.innerHTML = '';
+            
+            SHEET_NAMES.forEach(sheetName => {
+                const button = document.createElement('button');
+                button.className = 'tab-button' + (sheetName === currentTab ? ' active' : '');
+                button.textContent = sheetName;
+                button.onclick = () => displayTab(sheetName);
+                tabsContainer.appendChild(button);
+            });
+        }
+
+        function populateFilters() {
+            const months = new Set();
+            const years = new Set();
+            
+            Object.values(allData).forEach(sheetData => {
+                sheetData.forEach(row => {
+                    if (row['MÊS']) months.add(row['MÊS']);
+                    if (row['ANO']) years.add(row['ANO']);
+                });
+            });
+            
+            const monthSelect = document.getElementById('monthFilter');
+            const yearSelect = document.getElementById('yearFilter');
+            
+            const currentMonth = monthSelect.value;
+            const currentYear = yearSelect.value;
+            
+            monthSelect.innerHTML = '<option value="">Todos</option>';
+            Array.from(months).sort().forEach(month => {
+                const option = document.createElement('option');
+                option.value = month;
+                option.textContent = month;
+                monthSelect.appendChild(option);
+            });
+            monthSelect.value = currentMonth;
+            
+            yearSelect.innerHTML = '<option value="">Todos</option>';
+            Array.from(years).sort().reverse().forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            });
+            yearSelect.value = currentYear;
+        }
+
+        function displayTab(sheetName) {
+            currentTab = sheetName;
+            
+            // Atualizar botões de aba
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent === sheetName) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            filterTable();
+        }
+
+        function filterTable() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const monthFilter = document.getElementById('monthFilter').value;
+            const yearFilter = document.getElementById('yearFilter').value;
+            
+            let data = allData[currentTab] || [];
+            
+            data = data.filter(row => {
+                const matchesSearch = Object.values(row).some(val => 
+                    String(val).toLowerCase().includes(searchTerm)
+                );
+                
+                const matchesMonth = !monthFilter || row['MÊS'] === monthFilter;
+                const matchesYear = !yearFilter || row['ANO'] === yearFilter;
+                
+                return matchesSearch && matchesMonth && matchesYear;
+            });
+            
+            filteredData[currentTab] = data;
+            renderTable(data);
+        }
+
+        function renderTable(data) {
+            const contentContainer = document.getElementById('contentContainer');
+            
+            if (!data || data.length === 0) {
+                contentContainer.innerHTML = `
+                    <div class="empty-state">
+                        <p>Nenhum dado encontrado</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const headers = Object.keys(data[0]);
+            
+            let html = '<div class="table-wrapper"><table>';
+            html += '<thead><tr>';
+            headers.forEach(header => {
+                html += `<th>${header}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+            
+            data.forEach(row => {
+                html += '<tr>';
+                headers.forEach(header => {
+                    let value = row[header] || '';
+                    
+                    // Formatação especial para valores monetários
+                    if (header.includes('VGV') || header.includes('PREÇO')) {
+                        if (value && !isNaN(value)) {
+                            value = `R$ ${parseFloat(value).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                        }
+                    }
+                    
+                    html += `<td>${value}</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table></div>';
+            contentContainer.innerHTML = html;
+        }
+
+        function filterTable() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const monthFilter = document.getElementById('monthFilter').value;
+            const yearFilter = document.getElementById('yearFilter').value;
+            
+            let data = allData[currentTab] || [];
+            
+            data = data.filter(row => {
+                const matchesSearch = Object.values(row).some(val => 
+                    String(val).toLowerCase().includes(searchTerm)
+                );
+                
+                const matchesMonth = !monthFilter || row['MÊS'] === monthFilter;
+                const matchesYear = !yearFilter || row['ANO'] === yearFilter;
+                
+                return matchesSearch && matchesMonth && matchesYear;
+            });
+            
+            filteredData[currentTab] = data;
+            renderTable(data);
+        }
+
+        function exportToCSV() {
+            if (!filteredData[currentTab] || filteredData[currentTab].length === 0) {
+                alert('Nenhum dado para exportar');
+                return;
+            }
+            
+            const data = filteredData[currentTab];
+            const headers = Object.keys(data[0]);
+            
+            let csv = headers.join(',') + '\n';
+            data.forEach(row => {
+                const values = headers.map(header => {
+                    let value = row[header] || '';
+                    // Escapar aspas e envolver em aspas se necessário
+                    if (String(value).includes(',') || String(value).includes('"')) {
+                        value = '"' + String(value).replace(/"/g, '""') + '"';
+                    }
+                    return value;
+                });
+                csv += values.join(',') + '\n';
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `${currentTab}_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function updateLastUpdate() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('pt-BR');
+            document.getElementById('lastUpdate').textContent = timeString;
+        }
+
+        function showError(message) {
+            const contentContainer = document.getElementById('contentContainer');
+            contentContainer.innerHTML = `<div class="error">${message}</div>`;
+        }
+    </script>
+</body>
+</html>
